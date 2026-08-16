@@ -1,0 +1,18 @@
+# Credenciais e Segredos
+.env
+
+# Dados brutos e descompactados (Não versionar dados pesados, apenas código)
+*.zip
+*.csv
+data/
+
+# Ambiente Virtual
+.venv/
+venv/
+
+# Arquivos temporários do Python
+__pycache__/
+*.pyc
+
+# Cache e checkpoints do Jupyter Notebook
+.ipynb_checkpoints/
