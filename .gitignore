@@ -1,7 +1,7 @@
 # Credenciais e Segredos
 .env
 
-# Dados brutos e descompactados (Não versionar dados pesados, apenas código)
+# Dados brutos e descompactados (Nao versionar dados pesados, apenas codigo)
 *.zip
 *.csv
 data/
@@ -10,7 +10,7 @@ data/
 .venv/
 venv/
 
-# Arquivos temporários do Python
+# Arquivos temporarios do Python
 __pycache__/
 *.pyc
 

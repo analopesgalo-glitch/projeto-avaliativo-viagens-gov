@@ -16,6 +16,6 @@ gdown
 jupyter
 ipykernel
 
-# Visualização de Dados e Gráficos
+# Visualizaçao de Dados e Graficos
 matplotlib
 seaborn
