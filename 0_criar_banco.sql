@@ -1,111 +1,138 @@
--- 1. Remocao preventiva de tabelas (Idempotencia)
-DROP TABLE IF EXISTS silver_trecho CASCADE;
-DROP TABLE IF EXISTS silver_pagamento CASCADE;
-DROP TABLE IF EXISTS silver_passagem CASCADE;
-DROP TABLE IF EXISTS silver_viagem CASCADE;
+-- 0. Limpeza preventiva das tabelas antigas
+DROP TABLE IF EXISTS silver.silver_trecho CASCADE;
+DROP TABLE IF EXISTS silver.silver_passagem CASCADE;
+DROP TABLE IF EXISTS silver.silver_pagamento CASCADE;
+DROP TABLE IF EXISTS silver.silver_viagem CASCADE;
 
-DROP TABLE IF EXISTS raw_trecho CASCADE;
-DROP TABLE IF EXISTS raw_pagamento CASCADE;
-DROP TABLE IF EXISTS raw_passagem CASCADE;
-DROP TABLE IF EXISTS raw_viagem CASCADE;
+DROP TABLE IF EXISTS raw.raw_trecho CASCADE;
+DROP TABLE IF EXISTS raw.raw_passagem CASCADE;
+DROP TABLE IF EXISTS raw.raw_pagamento CASCADE;
+DROP TABLE IF EXISTS raw.raw_viagem CASCADE;
 
+-- 1. Criação dos Schemas
+CREATE SCHEMA IF NOT EXISTS raw;
+CREATE SCHEMA IF NOT EXISTS silver;
 
--- 2. Camada RAW (Ingestao de dados brutos)
-
-CREATE TABLE raw_viagem (
-    id_viagem VARCHAR(50),
-    orgao_solicitante TEXT,
-    nome_proposto TEXT,
-    cargo_proposto TEXT,pytho
-    motivo_viagem TEXT,
-    data_inicio VARCHAR(50),
-    data_fim VARCHAR(50),
-    valor_diarias VARCHAR(50),
-    valor_passagens VARCHAR(50),
-    valor_outros VARCHAR(50),
-    valor_total VARCHAR(50),
-    situacao TEXT
+-- 2. Camada RAW
+CREATE TABLE raw.raw_viagem (
+    id_viagem VARCHAR,
+    num_proposta VARCHAR,
+    situacao VARCHAR,
+    viagem_urgente VARCHAR,
+    cod_orgao_superior VARCHAR,
+    nome_orgao_superior VARCHAR,
+    nome_viajante VARCHAR,
+    cargo VARCHAR,
+    data_inicio VARCHAR,
+    data_fim VARCHAR,
+    destinos VARCHAR,
+    motivo VARCHAR,
+    valor_diarias VARCHAR,
+    valor_passagens VARCHAR,
+    valor_devolucao VARCHAR,
+    valor_outros_gastos VARCHAR,
+    cpf_viajante VARCHAR,
+    funcao VARCHAR
 );
 
-CREATE TABLE raw_passagem (
-    id_passagem VARCHAR(50),
-    id_viagem VARCHAR(50),
-    meio_transporte TEXT,
-    empresa_aerea TEXT,
-    valor_passagem VARCHAR(50),
-    taxa_servico VARCHAR(50),
-    data_emissao VARCHAR(50)
+CREATE TABLE raw.raw_passagem (
+    id_viagem VARCHAR,
+    meio_transporte VARCHAR,
+    pais_origem_ida VARCHAR,
+    uf_origem_ida VARCHAR,
+    cidade_origem_ida VARCHAR,
+    pais_destino_ida VARCHAR,
+    uf_destino_ida VARCHAR,
+    cidade_destino_ida VARCHAR,
+    valor_passagem VARCHAR,
+    taxa_servico VARCHAR,
+    data_emissao VARCHAR,
+    dados_volta VARCHAR
 );
 
-CREATE TABLE raw_pagamento (
-    id_pagamento VARCHAR(50),
-    id_viagem VARCHAR(50),
-    tipo_pagamento TEXT,
-    valor_pagamento VARCHAR(50),
-    data_pagamento VARCHAR(50)
+CREATE TABLE raw.raw_pagamento (
+    id_viagem VARCHAR,
+    num_proposta VARCHAR,
+    nome_orgao_pagador VARCHAR,
+    nome_ug_pagadora VARCHAR,
+    tipo_pagamento VARCHAR,
+    valor VARCHAR
 );
 
-CREATE TABLE raw_trecho (
-    id_trecho VARCHAR(50),
-    id_viagem VARCHAR(50),
-    origem TEXT,
-    destino TEXT,
-    data_partida VARCHAR(50),
-    data_chegada VARCHAR(50),
-    meio_transporte TEXT
+CREATE TABLE raw.raw_trecho (
+    id_viagem VARCHAR,
+    sequencia_trecho VARCHAR,
+    origem_data VARCHAR,
+    origem_uf VARCHAR,
+    origem_cidade VARCHAR,
+    destino_data VARCHAR,
+    destino_uf VARCHAR,
+    destino_cidade VARCHAR,
+    meio_transporte VARCHAR,
+    numero_diarias VARCHAR
 );
 
-
--- 3. Camada SILVER (Dados limpos, tipados e validados)
-
-CREATE TABLE silver_viagem (
-    id_viagem INT PRIMARY KEY,
-    orgao_solicitante TEXT NOT NULL,
-    nome_proposto TEXT NOT NULL,
-    cargo_proposto TEXT,
-    motivo_viagem TEXT,
-    data_inicio DATE NOT NULL,
-    data_fim DATE NOT NULL,
-    valor_diarias NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (valor_diarias >= 0),
-    valor_passagens NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (valor_passagens >= 0),
-    valor_outros NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (valor_outros >= 0),
-    valor_total NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (valor_total >= 0),
-    situacao VARCHAR(100) NOT NULL,
-    CONSTRAINT chk_datas_viagem CHECK (data_fim >= data_inicio)
+-- 3. Camada SILVER
+CREATE TABLE silver.silver_viagem (
+    id_viagem VARCHAR(20) PRIMARY KEY NOT NULL,
+    num_proposta VARCHAR(20),
+    situacao VARCHAR(50),
+    viagem_urgente VARCHAR(5),
+    cod_orgao_superior VARCHAR(20),
+    nome_orgao_superior VARCHAR(255) NOT NULL,
+    nome_viajante VARCHAR(255),
+    cargo VARCHAR(255),
+    data_inicio DATE,
+    data_fim DATE,
+    destinos VARCHAR(4000),
+    motivo VARCHAR(4000),
+    valor_diarias DECIMAL(10,2) CHECK (valor_diarias >= 0),
+    valor_passagens DECIMAL(10,2),
+    valor_devolucao DECIMAL(10,2),
+    valor_outros_gastos DECIMAL(10,2),
+    valor_total DECIMAL(12,2),
+    duracao_dias INT
 );
 
-CREATE TABLE silver_passagem (
-    id_passagem INT PRIMARY KEY,
-    id_viagem INT NOT NULL REFERENCES silver_viagem(id_viagem) ON DELETE CASCADE,
-    meio_transporte VARCHAR(100) NOT NULL,
-    empresa_aerea VARCHAR(150),
-    valor_passagem NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (valor_passagem >= 0),
-    taxa_servico NUMERIC(12, 2) DEFAULT 0.00 CHECK (taxa_servico >= 0),
-    data_emissao DATE NOT NULL
+CREATE TABLE silver.silver_pagamento (
+    id_pagamento SERIAL PRIMARY KEY,
+    id_viagem VARCHAR(20) NOT NULL,
+    num_proposta VARCHAR(20),
+    nome_orgao_pagador VARCHAR(255),
+    nome_ug_pagadora VARCHAR(255),
+    tipo_pagamento VARCHAR(50) NOT NULL,
+    valor DECIMAL(10,2) CHECK (valor >= 0),
+    CONSTRAINT fk_viagem_pagamento FOREIGN KEY (id_viagem) REFERENCES silver.silver_viagem(id_viagem)
 );
 
-CREATE TABLE silver_pagamento (
-    id_pagamento INT PRIMARY KEY,
-    id_viagem INT NOT NULL REFERENCES silver_viagem(id_viagem) ON DELETE CASCADE,
-    tipo_pagamento VARCHAR(100) NOT NULL,
-    valor_pagamento NUMERIC(12, 2) NOT NULL DEFAULT 0.00 CHECK (valor_pagamento >= 0),
-    data_pagamento DATE NOT NULL
+CREATE TABLE silver.silver_passagem (
+    id_passagem SERIAL PRIMARY KEY,
+    id_viagem VARCHAR(20) NOT NULL,
+    meio_transporte VARCHAR(50),
+    pais_origem_ida VARCHAR(60),
+    uf_origem_ida VARCHAR(40),
+    cidade_origem_ida VARCHAR(80),
+    pais_destino_ida VARCHAR(60),
+    uf_destino_ida VARCHAR(40),
+    cidade_destino_ida VARCHAR(80),
+    valor_passagem DECIMAL(10,2) CHECK (valor_passagem >= 0),
+    taxa_servico DECIMAL(10,2) CHECK (taxa_servico >= 0),
+    data_emissao DATE,
+    CONSTRAINT fk_viagem_passagem FOREIGN KEY (id_viagem) REFERENCES silver.silver_viagem(id_viagem)
 );
 
-CREATE TABLE silver_trecho (
-    id_trecho INT PRIMARY KEY,
-    id_viagem INT NOT NULL REFERENCES silver_viagem(id_viagem) ON DELETE CASCADE,
-    origem VARCHAR(150) NOT NULL,
-    destino VARCHAR(150) NOT NULL,
-    data_partida DATE NOT NULL,
-    data_chegada DATE NOT NULL,
-    meio_transporte VARCHAR(100) NOT NULL,
-    CONSTRAINT chk_datas_trecho CHECK (data_chegada >= data_partida)
+CREATE TABLE silver.silver_trecho (
+    id_trecho SERIAL PRIMARY KEY,
+    id_viagem VARCHAR(20) NOT NULL,
+    sequencia_trecho INT,
+    origem_data DATE,
+    origem_uf VARCHAR(40),
+    origem_cidade VARCHAR(80),
+    destino_data DATE,
+    destino_uf VARCHAR(40),
+    destino_cidade VARCHAR(80),
+    meio_transporte VARCHAR(50),
+    numero_diarias DECIMAL(10,2) CHECK (numero_diarias >= 0),
+    CONSTRAINT fk_viagem_trecho FOREIGN KEY (id_viagem) REFERENCES silver.silver_viagem(id_viagem),
+    CONSTRAINT unique_viagem_sequencia UNIQUE (id_viagem, sequencia_trecho)
 );
-
-
--- 4. Indices para otimizacao de buscas
-
-CREATE INDEX idx_passagem_viagem ON silver_passagem(id_viagem);
-CREATE INDEX idx_pagamento_viagem ON silver_pagamento(id_viagem);
-CREATE INDEX idx_trecho_viagem ON silver_trecho(id_viagem);
